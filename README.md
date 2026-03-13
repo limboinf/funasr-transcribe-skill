@@ -2,7 +2,7 @@
 
 Local speech-to-text for audio files using Alibaba FunASR. This skill is designed mainly for Chinese and mixed Chinese-English audio, while keeping the transcription step on the local machine.
 
-中文说明请见 `README.zh-CN.md`.
+中文说明请见 [README.zh-CN.md](README.zh-CN.md).
 
 ## Highlights
 
