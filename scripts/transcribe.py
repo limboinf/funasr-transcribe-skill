@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
+# SECURITY MANIFEST:
+#   Environment variables accessed: none
+#   External endpoints called: none directly (FunASR dependencies may download models on first run)
+#   Local files read: input audio file
+#   Local files written: sibling .txt transcript file
+
 """FunASR 音频转录脚本"""
 
 import sys
 import os
-import json
+from pathlib import Path
+
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+INSTALL_SCRIPT = SCRIPT_DIR / "install.sh"
 
 try:
     from funasr import AutoModel
@@ -11,7 +21,7 @@ except ImportError:
     print("❌ 错误：未找到 funasr 模块")
     print("")
     print("请先安装 FunASR：")
-    print("  bash ~/.openclaw/workspace/skills/funasr-transcribe/scripts/install.sh")
+    print(f"  bash {INSTALL_SCRIPT}")
     sys.exit(1)
 
 
@@ -25,14 +35,11 @@ def transcribe_audio(audio_path):
         model="damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch",
         vad_model="damo/speech_fsmn_vad_zh-cn-16k-common-pytorch",
         punc_model="damo/punc_ct-transformer_zh-cn-common-vocab272727-pytorch",
-        device="cpu"  # 使用 CPU，如果有 GPU 可以改为 "cuda:0"
+        device="cpu",  # 使用 CPU，如果有 GPU 可以改为 "cuda:0"
     )
 
     # 进行语音识别
-    res = model.generate(
-        input=audio_path,
-        batch_size_s=300
-    )
+    res = model.generate(input=audio_path, batch_size_s=300)
 
     return res
 
@@ -54,6 +61,9 @@ def main():
         result = transcribe_audio(audio_path)
     except Exception as e:
         print(f"❌ 转录失败: {e}")
+        print(
+            "提示：请检查依赖是否已安装、模型下载所需网络是否可用、音频文件是否有效。"
+        )
         sys.exit(1)
 
     # 输出结果
@@ -65,9 +75,9 @@ def main():
         print("⚠️  未识别到文本")
         sys.exit(0)
 
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print("转录结果:")
-    print("="*50)
+    print("=" * 50)
     print(text)
 
     # 保存到文件

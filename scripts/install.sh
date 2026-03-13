@@ -1,12 +1,19 @@
 #!/bin/bash
-# FunASR 安装脚本
-# 用途：创建虚拟环境并安装 FunASR 及其依赖
+# SECURITY MANIFEST:
+#   Environment variables accessed: HOME
+#   External endpoints called: https://pypi.tuna.tsinghua.edu.cn/simple
+#   Local files read: scripts/install.sh
+#   Local files written: ~/.openclaw/workspace/funasr_env
 
-set -e
+set -euo pipefail
 
-# 配置
 VENV_DIR="$HOME/.openclaw/workspace/funasr_env"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FORCE_REINSTALL=0
+
+if [[ "${1:-}" == "--force" ]]; then
+    FORCE_REINSTALL=1
+fi
 
 echo "=========================================="
 echo "FunASR 安装脚本"
@@ -14,9 +21,15 @@ echo "=========================================="
 echo ""
 
 # 检查 Python
-if ! command -v python3 &> /dev/null; then
+if ! command -v python3 >/dev/null 2>&1; then
     echo "❌ 错误：未找到 python3"
     echo "请先安装 Python 3.7+"
+    exit 1
+fi
+
+if ! python3 -m venv --help >/dev/null 2>&1; then
+    echo "❌ 错误：当前 Python 不支持 venv"
+    echo "请安装 Python venv 模块后重试"
     exit 1
 fi
 
@@ -25,13 +38,13 @@ echo "✓ Python 版本: $PYTHON_VERSION"
 
 # 创建虚拟环境
 if [ -d "$VENV_DIR" ]; then
-    echo "⚠️  虚拟环境已存在: $VENV_DIR"
-    read -p "是否重新安装？(y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "安装已取消"
+    if [ "$FORCE_REINSTALL" -ne 1 ]; then
+        echo "⚠️  虚拟环境已存在: $VENV_DIR"
+        echo "如需重装，请运行: bash $SCRIPT_DIR/install.sh --force"
         exit 0
     fi
+
+    echo "检测到 --force，正在重建虚拟环境: $VENV_DIR"
     rm -rf "$VENV_DIR"
 fi
 

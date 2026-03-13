@@ -1,12 +1,15 @@
 #!/bin/bash
-# FunASR 音频转录脚本
-# 用途：将音频文件转录为文本
+# SECURITY MANIFEST:
+#   Environment variables accessed: HOME
+#   External endpoints called: none directly (Python process may trigger model download on first run)
+#   Local files read: input audio file, scripts/transcribe.py, ~/.openclaw/workspace/funasr_env
+#   Local files written: sibling .txt file created by scripts/transcribe.py
 
-set -e
+set -euo pipefail
 
-# 配置
 VENV_DIR="$HOME/.openclaw/workspace/funasr_env"
-TRANSCRIBE_PY="$HOME/.openclaw/workspace/skills/funasr-transcribe/scripts/transcribe.py"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TRANSCRIBE_PY="$SCRIPT_DIR/transcribe.py"
 
 # 检查参数
 if [ $# -lt 1 ]; then
@@ -31,7 +34,19 @@ if [ ! -d "$VENV_DIR" ]; then
     echo "❌ 错误：FunASR 未安装"
     echo ""
     echo "请先运行安装脚本："
-    echo "  bash ~/.openclaw/workspace/skills/funasr-transcribe/scripts/install.sh"
+    echo "  bash $SCRIPT_DIR/install.sh"
+    exit 1
+fi
+
+if [ ! -f "$VENV_DIR/bin/activate" ]; then
+    echo "❌ 错误：虚拟环境不完整: $VENV_DIR"
+    echo "请重新运行安装脚本："
+    echo "  bash $SCRIPT_DIR/install.sh --force"
+    exit 1
+fi
+
+if [ ! -f "$TRANSCRIBE_PY" ]; then
+    echo "❌ 错误：未找到转录脚本: $TRANSCRIBE_PY"
     exit 1
 fi
 

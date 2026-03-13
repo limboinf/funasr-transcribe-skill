@@ -1,79 +1,77 @@
 ---
 name: funasr-transcribe
-description: 本地音频转录工具，使用阿里 FunASR 模型进行语音识别。支持中文、英文等多种语言，无需 API 费用，完全本地运行。适用于音频文件转写（.wav, .ogg, .mp3 等）、会议记录、语音笔记整理等场景。
+description: Use when the user needs local speech-to-text transcription for audio files, especially Chinese or mixed Chinese-English audio, without relying on cloud transcription APIs.
+homepage: https://github.com/limboinf/funasr-transcribe-skill
+metadata:
+  clawdbot:
+    emoji: "🎙️"
+    requires:
+      env: []
+    files: ["README.md", "README.zh-CN.md", "LICENSE", "scripts/*"]
 ---
 
-# FunASR 语音转录
+# FunASR Transcribe
 
-本地、免费、高效的语音识别工具，基于阿里巴巴 FunASR 模型。
+Local speech-to-text for audio files using FunASR. It is best suited to Chinese and mixed Chinese-English audio, runs on the local machine, and does not require a paid transcription API.
 
-## 快速开始
+## When to Use
+
+- The user wants to transcribe `.wav`, `.ogg`, `.mp3`, `.flac`, or `.m4a` files into text.
+- The user prefers local ASR over cloud speech APIs for privacy, cost, or offline-friendly workflows.
+- The audio is primarily Chinese, dialect-heavy Chinese, or mixed Chinese-English.
+- The user is okay with installing Python dependencies and downloading models on first use.
+
+Do not use this skill when the user explicitly forbids local dependency installation or any network access for dependency/model download.
+
+## Quick Start
 
 ```bash
-# 1. 安装 FunASR
+# Install dependencies and create a virtual environment
 bash ~/.openclaw/workspace/skills/funasr-transcribe/scripts/install.sh
 
-# 2. 转录音频
+# Transcribe an audio file
 bash ~/.openclaw/workspace/skills/funasr-transcribe/scripts/transcribe.sh /path/to/audio.ogg
 ```
 
-## 安装 FunASR
+## What It Does
 
-首次使用需要安装 FunASR 环境（虚拟环境 + 依赖）：
+- Creates a Python virtual environment at `~/.openclaw/workspace/funasr_env` by default.
+- Installs `funasr`, `torch`, `torchaudio`, `modelscope`, and related dependencies.
+- Loads FunASR models locally and writes the transcript to a sibling `.txt` file.
+- Prints the transcript to stdout for direct CLI use.
 
-```bash
-bash ~/.openclaw/workspace/skills/funasr-transcribe/scripts/install.sh
-```
+## Models
 
-安装脚本会：
-- 创建 Python 虚拟环境 `~/.openclaw/workspace/funasr_env`
-- 安装 FunASR、torch、torchaudio、modelscope 等依赖
-- 安装完成后，首次转录会自动下载模型文件
+- ASR: `damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch`
+- VAD: `damo/speech_fsmn_vad_zh-cn-16k-common-pytorch`
+- Punctuation: `damo/punc_ct-transformer_zh-cn-common-vocab272727-pytorch`
 
-**安装时间**：约 5-10 分钟（取决于网络速度）
+## External Endpoints
 
-**系统要求**：
-- Python 3.7+
-- 约 4GB 磁盘空间（虚拟环境 + 模型）
-- 推荐 8GB+ 内存
+| Endpoint | Purpose | Data sent |
+| --- | --- | --- |
+| `https://pypi.tuna.tsinghua.edu.cn/simple` | Install Python packages during setup | Package names and installer metadata requested by `pip` |
+| ModelScope and/or Hugging Face endpoints used by FunASR dependencies | Download model files on first run | Model identifiers and standard HTTP request metadata |
 
-## 转录音频
+## Security & Privacy
 
-安装完成后，转录音频：
+- Audio files are read from the local machine and processed locally by FunASR.
+- The transcription flow does not intentionally upload audio content to a cloud ASR API.
+- Network access is still required during setup and first-run model download.
+- The generated transcript is written to a local `.txt` file next to the source audio unless the write step fails.
+- This skill does not require API keys or other secrets by default.
 
-```bash
-bash ~/.openclaw/workspace/skills/funasr-transcribe/scripts/transcribe.sh /path/to/audio.ogg
-```
+## Model Invocation Note
 
-**支持的格式**：`.wav`, `.ogg`, `.mp3`, `.flac`, `.m4a` 等
+Autonomous invocation is normal for this skill. If a user asks to transcribe local audio, an agent may install dependencies and run the helper scripts unless the user explicitly opts out of dependency installation or network access.
 
-**输出**：
-- 同目录下生成 `<audio_filename>.txt`
-- 包含转录文本（带标点）
+## Trust Statement
 
-**性能**：
-- CPU 推理：rtf 约 0.05-0.2（1 秒音频约需 0.05-0.2 秒）
-- 首次转录需下载模型（约 1-2GB），后续直接使用缓存
+By using this skill, package and model downloads may be fetched from third-party upstream sources such as the configured PyPI mirror and model hosting providers. Only install and use this skill if you trust those upstream sources.
 
-## 技术细节
+## Troubleshooting
 
-FunASR 使用以下模型组合：
-- **ASR 模型**：`damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch`（中文优化）
-- **VAD 模型**：`damo/speech_fsmn_vad_zh-cn-16k-common-pytorch`（语音活动检测）
-- **标点模型**：`damo/punc_ct-transformer_zh-cn-common-vocab272727-pytorch`（标点恢复）
-
-**语言支持**：
-- 中文（普通话 + 方言）
-- 英文
-- 中英混合
-
-## 常见问题
-
-**Q: 首次转录很慢？**
-A: 首次运行会自动下载模型文件（约 1-2GB），后续转录会快很多。
-
-**Q: 可以用 GPU 吗？**
-A: 可以。编辑 `scripts/transcribe.py`，将 `device="cpu"` 改为 `device="cuda:0"`，并安装对应的 CUDA 版本依赖。
-
-**Q: 转录准确率如何？**
-A: FunASR 在中文场景下表现优异，通常优于 OpenAI Whisper。建议测试后评估效果。
+- `python3` not found: install Python 3.7+ and rerun `scripts/install.sh`.
+- Install fails in the existing environment: rerun `scripts/install.sh --force` to recreate the virtual environment.
+- First transcription is slow: initial model downloads can take several minutes.
+- GPU is desired: edit `scripts/transcribe.py` and change `device="cpu"` to a CUDA device after installing the correct CUDA build.
