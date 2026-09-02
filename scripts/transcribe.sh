@@ -1,13 +1,13 @@
 #!/bin/bash
 # SECURITY MANIFEST:
-#   Environment variables accessed: HOME
+#   Environment variables accessed: HOME, XDG_CACHE_HOME, FUNASR_TRANSCRIBE_VENV
 #   External endpoints called: none directly (Python process may trigger model download on first run)
-#   Local files read: input audio file, scripts/transcribe.py, ~/.openclaw/workspace/funasr_env
+#   Local files read: input audio file, scripts/transcribe.py, selected virtual environment
 #   Local files written: sibling .txt file created by scripts/transcribe.py
 
 set -euo pipefail
 
-VENV_DIR="$HOME/.openclaw/workspace/funasr_env"
+VENV_DIR="${FUNASR_TRANSCRIBE_VENV:-${XDG_CACHE_HOME:-$HOME/.cache}/funasr-transcribe/venv}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TRANSCRIBE_PY="$SCRIPT_DIR/transcribe.py"
 

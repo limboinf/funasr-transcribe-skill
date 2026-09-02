@@ -17,6 +17,7 @@ INSTALL_SCRIPT = SCRIPT_DIR / "install.sh"
 
 try:
     from funasr import AutoModel
+    from funasr.utils.postprocess_utils import rich_transcription_postprocess
 except ImportError:
     print("❌ 错误：未找到 funasr 模块")
     print("")
@@ -32,16 +33,38 @@ def transcribe_audio(audio_path):
 
     # 加载模型
     model = AutoModel(
-        model="damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch",
-        vad_model="damo/speech_fsmn_vad_zh-cn-16k-common-pytorch",
-        punc_model="damo/punc_ct-transformer_zh-cn-common-vocab272727-pytorch",
+        model="FunAudioLLM/SenseVoiceSmall",
+        vad_model="fsmn-vad",
+        vad_kwargs={"max_single_segment_time": 30000},
         device="cpu",  # 使用 CPU，如果有 GPU 可以改为 "cuda:0"
     )
 
     # 进行语音识别
-    res = model.generate(input=audio_path, batch_size_s=300)
+    res = model.generate(
+        input=audio_path,
+        cache={},
+        language="auto",
+        use_itn=True,
+        batch_size_s=60,
+        merge_vad=True,
+        merge_length_s=15,
+    )
 
     return res
+
+
+def extract_text(result):
+    """从 FunASR 结果中提取并清理文本"""
+    if not isinstance(result, list) or not result:
+        return ""
+    if not isinstance(result[0], dict):
+        return ""
+
+    text = result[0].get("text")
+    if not isinstance(text, str) or not text:
+        return ""
+
+    return rich_transcription_postprocess(text)
 
 
 def main():
@@ -67,9 +90,7 @@ def main():
         sys.exit(1)
 
     # 输出结果
-    text = ""
-    if isinstance(result, list) and len(result) > 0:
-        text = result[0].get("text", "")
+    text = extract_text(result)
 
     if not text:
         print("⚠️  未识别到文本")

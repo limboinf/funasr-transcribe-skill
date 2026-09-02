@@ -1,13 +1,13 @@
 #!/bin/bash
 # SECURITY MANIFEST:
-#   Environment variables accessed: HOME
+#   Environment variables accessed: HOME, XDG_CACHE_HOME, FUNASR_TRANSCRIBE_VENV
 #   External endpoints called: https://pypi.tuna.tsinghua.edu.cn/simple
 #   Local files read: scripts/install.sh
-#   Local files written: ~/.openclaw/workspace/funasr_env
+#   Local files written: selected FunASR virtual environment directory
 
 set -euo pipefail
 
-VENV_DIR="$HOME/.openclaw/workspace/funasr_env"
+VENV_DIR="${FUNASR_TRANSCRIBE_VENV:-${XDG_CACHE_HOME:-$HOME/.cache}/funasr-transcribe/venv}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FORCE_REINSTALL=0
 
@@ -23,7 +23,7 @@ echo ""
 # 检查 Python
 if ! command -v python3 >/dev/null 2>&1; then
     echo "❌ 错误：未找到 python3"
-    echo "请先安装 Python 3.7+"
+    echo "请先安装 Python 3.8+"
     exit 1
 fi
 
@@ -34,6 +34,10 @@ if ! python3 -m venv --help >/dev/null 2>&1; then
 fi
 
 PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+if ! python3 -c 'import sys; raise SystemExit(sys.version_info < (3, 8))'; then
+    echo "❌ 错误：需要 Python 3.8 或更高版本，当前版本为 $PYTHON_VERSION"
+    exit 1
+fi
 echo "✓ Python 版本: $PYTHON_VERSION"
 
 # 创建虚拟环境
@@ -49,6 +53,7 @@ if [ -d "$VENV_DIR" ]; then
 fi
 
 echo "创建虚拟环境: $VENV_DIR"
+mkdir -p "$(dirname "$VENV_DIR")"
 python3 -m venv "$VENV_DIR"
 source "$VENV_DIR/bin/activate"
 
