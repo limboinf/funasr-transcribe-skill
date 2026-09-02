@@ -37,6 +37,7 @@ def transcribe_audio(audio_path):
         vad_model="fsmn-vad",
         vad_kwargs={"max_single_segment_time": 30000},
         device="cpu",  # 使用 CPU，如果有 GPU 可以改为 "cuda:0"
+        hub="hf",
     )
 
     # 进行语音识别

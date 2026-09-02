@@ -48,6 +48,7 @@ class TranscribeTest(unittest.TestCase):
                 "vad_model": "fsmn-vad",
                 "vad_kwargs": {"max_single_segment_time": 30000},
                 "device": "cpu",
+                "hub": "hf",
             },
         )
         self.assertEqual(
