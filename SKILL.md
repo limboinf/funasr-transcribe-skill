@@ -1,7 +1,8 @@
 ---
 name: funasr-transcribe
-description: Use when the user needs local speech-to-text transcription for audio files, especially Chinese or mixed Chinese-English audio, without relying on cloud transcription APIs.
+description: Transcribes local audio to text with FunASR and CPU-friendly SenseVoiceSmall. Use for Mandarin, Cantonese, English, Japanese, Korean, or mixed-language recordings when local processing is preferred over cloud ASR APIs.
 homepage: https://github.com/limboinf/funasr-transcribe-skill
+compatibility: Requires Python 3.8+, network access during setup and first model download, and about 4 GB of free disk space.
 metadata:
   clawdbot:
     emoji: "🎙️"
@@ -12,46 +13,63 @@ metadata:
 
 # FunASR Transcribe
 
-Local speech-to-text for audio files using FunASR. It is best suited to Chinese and mixed Chinese-English audio, runs on the local machine, and does not require a paid transcription API.
+Transcribe audio locally with FunASR, using SenseVoiceSmall on CPU by default. The workflow prints plain text and writes a sibling `.txt` file without sending audio to a cloud transcription API.
 
 ## When to Use
 
 - The user wants to transcribe `.wav`, `.ogg`, `.mp3`, `.flac`, or `.m4a` files into text.
-- The user prefers local ASR over cloud speech APIs for privacy, cost, or offline-friendly workflows.
-- The audio is primarily Chinese, dialect-heavy Chinese, or mixed Chinese-English.
+- The recording contains Mandarin, Cantonese, English, Japanese, Korean, or mixed speech.
+- The user prefers local inference for privacy, cost, or offline reuse after setup.
 - The user is okay with installing Python dependencies and downloading models on first use.
 
-Do not use this skill when the user explicitly forbids local dependency installation or any network access for dependency/model download.
+Do not use this skill when the user forbids local dependency installation or all network access and the dependencies/models are not already cached.
 
-## Quick Start
+## Workflow
+
+Resolve the commands below relative to this skill's directory.
+
+1. If the runtime environment does not exist, explain that setup downloads Python packages and model files, then run:
 
 ```bash
-# Install dependencies and create a virtual environment
-bash ~/.openclaw/workspace/skills/funasr-transcribe/scripts/install.sh
-
-# Transcribe an audio file
-bash ~/.openclaw/workspace/skills/funasr-transcribe/scripts/transcribe.sh /path/to/audio.ogg
+bash scripts/install.sh
 ```
 
-## What It Does
+2. Transcribe the requested audio file:
 
-- Creates a Python virtual environment at `~/.openclaw/workspace/funasr_env` by default.
-- Installs `funasr`, `torch`, `torchaudio`, `modelscope`, and related dependencies.
-- Loads FunASR models locally and writes the transcript to a sibling `.txt` file.
-- Prints the transcript to stdout for direct CLI use.
+```bash
+bash scripts/transcribe.sh /path/to/audio.ogg
+```
+
+3. Return the transcript and the output path to the user. The script writes `<audio_filename>.txt` beside the source audio.
+
+To rebuild a broken or outdated runtime environment:
+
+```bash
+bash scripts/install.sh --force
+```
+
+## Runtime Storage
+
+The virtual environment is selected in this order:
+
+1. `FUNASR_TRANSCRIBE_VENV`
+2. `$XDG_CACHE_HOME/funasr-transcribe/venv`
+3. `$HOME/.cache/funasr-transcribe/venv`
 
 ## Models
 
-- ASR: `damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch`
-- VAD: `damo/speech_fsmn_vad_zh-cn-16k-common-pytorch`
-- Punctuation: `damo/punc_ct-transformer_zh-cn-common-vocab272727-pytorch`
+- Default ASR: [`FunAudioLLM/SenseVoiceSmall`](https://huggingface.co/FunAudioLLM/SenseVoiceSmall)
+- VAD: `fsmn-vad`
+- Rich output is normalized to plain text with FunASR's `rich_transcription_postprocess`.
+
+[`FunAudioLLM/Fun-ASR-Nano-2512`](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512) is the newer GPU-oriented flagship. Do not switch to it automatically: this skill intentionally keeps a CPU-first default.
 
 ## External Endpoints
 
 | Endpoint | Purpose | Data sent |
 | --- | --- | --- |
 | `https://pypi.tuna.tsinghua.edu.cn/simple` | Install Python packages during setup | Package names and installer metadata requested by `pip` |
-| ModelScope and/or Hugging Face endpoints used by FunASR dependencies | Download model files on first run | Model identifiers and standard HTTP request metadata |
+| Hugging Face endpoints used by FunASR | Download SenseVoiceSmall and related model files on first run | Model identifiers and standard HTTP request metadata |
 
 ## Security & Privacy
 
@@ -61,17 +79,13 @@ bash ~/.openclaw/workspace/skills/funasr-transcribe/scripts/transcribe.sh /path/
 - The generated transcript is written to a local `.txt` file next to the source audio unless the write step fails.
 - This skill does not require API keys or other secrets by default.
 
-## Model Invocation Note
-
-Autonomous invocation is normal for this skill. If a user asks to transcribe local audio, an agent may install dependencies and run the helper scripts unless the user explicitly opts out of dependency installation or network access.
-
 ## Trust Statement
 
 By using this skill, package and model downloads may be fetched from third-party upstream sources such as the configured PyPI mirror and model hosting providers. Only install and use this skill if you trust those upstream sources.
 
 ## Troubleshooting
 
-- `python3` not found: install Python 3.7+ and rerun `scripts/install.sh`.
+- `python3` not found or too old: install Python 3.8+ and rerun `scripts/install.sh`.
 - Install fails in the existing environment: rerun `scripts/install.sh --force` to recreate the virtual environment.
 - First transcription is slow: initial model downloads can take several minutes.
-- GPU is desired: edit `scripts/transcribe.py` and change `device="cpu"` to a CUDA device after installing the correct CUDA build.
+- Need the latest GPU model: use the official Fun-ASR-Nano-2512 instructions instead of silently changing this skill's CPU pipeline.
